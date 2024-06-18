@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ryoshi's Arcade - PopSauce - Home</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/popsauce/home.css">
+  <link rel="stylesheet" href="/css/popsauce/root.css">
+</head>
+<body>
+<div class="container text-center" style="background-color: var(--background-color-light)">
+  <h1>Pop Sauce</h1>
+  <h2>Diese App wurde von Ryoshi entwickelt.</h2>
+  <div class="w-75 m-auto">
+    <p>
+      Diese Application wurde im Backend mit Spring Boot und als Datenbank Management System wurde sich final für Postgres entschieden
+      allerdings lief das Programm vorher schon auf H2. Über EndPoints und WebSockets ist das Backend mit dem Frontend verbunden der
+      ganz einfach mit JavaScript HTML und CSS implementiert wurde.
+
+      Diese Web Application ist inspiriert von der Popsauce Game aus JKLM.fun. Diese Application ist nicht dafür gedacht
+      damit man mit ihr Spielen kann (auch wenn es natürlich möglich ist), sondern eher um meine Kenntnisse zu demonstrieren.
+      Dementsprechend ist das Design nicht durchdacht und es gibt aktuell auch nur eine Kategorie, und zwar Animes mit etwa 40
+      Bildern, wenn du Lust hast deine eigene Sammlung an Bildern und Kategorien zu verwenden kannst du mein GitHub Projekt forken und unter resources/pictures deine eigenen Bilder
+      unterbringen. Dabei solltest du folgende Struktur beachten: "resources/pictures/category/rightGuess/picture" Der right
+      guess wird nicht auf Groß- und Kleinschreibung überprüft ein Right Guess könnte zum Beispiel so aussehen "König der Löwen,Lion King"
+      Jeder right Guess wird mit einem Komma getrennt und der erste Right guess ist das Wort, was bei der Lösung oben am Ende steht.
+    </p>
+    <h4>
+      Early Access!
+    </h4>
+  </div>
+
+  <div class="d-flex-center flex-column mt-5">
+    <label for="input-username">Select Username:</label>
+    <div>
+      <input class="home-input" id="input-username" type="text">
+      <label class="invisible" id="invalid-username">Username already exists</label>
+    </div>
+  </div>
+  <div class="home-interaction">
+    <div class="home-field">
+      <h2>Create your own Game!</h2>
+      <button onclick="createGame()" class="home-button">
+        Create Game
+      </button>
+    </div>
+    <div class="home-field">
+      <h2>Join your Friends!</h2>
+      <label for="input-code">Enter Room Code:</label>
+      <input class="home-input" type="text" id="input-code">
+      <label class="invisible" id="invalid-code">Invalid Code</label>
+      <button onclick="joinGame()" class="home-button">
+        Join Game
+      </button>
+    </div>
+    <form class="home-field" action="/popsauce/upload-own-picture" method="post">
+      <h2>Upload your own Picture</h2>
+      <label for="picture-url">Enter Picture</label>
+      <input id="picture-url" type="url" name="url" class="home-input">
+      <label for="picture-category">Enter Picture Category</label>
+      <input id="picture-category" name="category" class="home-input">
+      <label for="picture-rightGuesses">Enter All Right Guesses in this Format "first,second,third,..."</label>
+      <input id="picture-rightGuesses" name="rightGuesses" class="home-input">
+      <label for="difficulty">Difficulty</label>
+      <input id="difficulty" name="difficulty" class="home-input">
+      <label class="invisible" id="invalid-image">Something went wrong</label>
+      <input type="submit" class="home-button">
+    </form>
+  </div>
+</div>
+<script src="/javascript/popsauce/home.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

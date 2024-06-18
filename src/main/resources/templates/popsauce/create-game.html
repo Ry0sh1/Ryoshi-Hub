@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ryoshi's Arcade - PopSauce - Create-Game</title>
+  <link rel="stylesheet" href="/css/popsauce/create-game.css">
+  <link rel="stylesheet" href="/css/popsauce/root.css">
+</head>
+<body>
+<div class="content">
+  <div class="create-game-field">
+    <label class="create-game-label" for="guess-timer">Guess Timer:</label>
+    <input class="create-game-input" type="number" min="7" max="15" id="guess-timer">
+  </div>
+  <div class="create-game-field">
+    <label class="create-game-label" for="result-timer">Result Timer:</label>
+    <input class="create-game-input" type="number" min="2" max="5" id="result-timer">
+  </div>
+  <div class="create-game-field">
+    <label class="create-game-label" for="category">Category:</label>
+    <select id="category" th:field="*{settings}" required>
+      <option th:each="cateory : ${categories}" th:text="${cateory}" th:value="${cateory}"></option>
+    </select>
+  </div>
+  <div class="create-game-field">
+    <button class="create-game-button" onclick="setSettings();">Start Game</button>
+  </div>
+</div>
+<script src="/javascript/popsauce/settings.js"></script>
+</body>
+</html>
