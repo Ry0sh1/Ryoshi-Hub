@@ -4,24 +4,18 @@ class Centipede{
     tailLength;
     speed = settings.gridSize;
     verticalSpeed = settings.gridSize;
-    direction;
     tail = [];
 
-    constructor(x,y,tailLength,direction) {
+    constructor(x,y,tailLength,speed) {
         this.x = x;
         this.y = y;
         this.tailLength = tailLength;
-        this.direction = direction;
+        this.speed = speed;
     }
 
     move(){
         this.appendPart();
-        if (this.direction === 'd'){
-            this.x += this.speed;
-        }
-        if (this.direction === 'a'){
-            this.x -= this.speed;
-        }
+        this.x += this.speed;
         if (this.x < 0 || this.x >= canvas.width){
             this.turn();
         }
@@ -32,11 +26,19 @@ class Centipede{
     }
 
     turn(){
-        if (this.y + this.verticalSpeed >= canvas.height || this.y + this.verticalSpeed < 0){
-            this.verticalSpeed *= -1;
+        if (this.y + this.verticalSpeed < 0){
+            this.verticalSpeed = settings.gridSize;
+        }
+        if (this.y + this.verticalSpeed >= canvas.height){
+            this.verticalSpeed = -1 * settings.gridSize;
         }
         this.y += this.verticalSpeed;
-        this.direction = this.direction === 'a' ? 'd' : 'a';
+        if (this.x < 0){
+            this.speed = settings.gridSize;
+        }
+        if (this.x >= canvas.width){
+            this.speed = settings.gridSize * -1;
+        }
     }
 
     appendPart(){
@@ -66,7 +68,7 @@ class Centipede{
         this.x = this.tail[0][0];
         this.y = this.tail[0][1];
         this.removePartAtBeginning();
-        this.direction = this.direction === 'a' ? 'd' : 'a';
+        this.turn();
     }
 
     partHit(index){
@@ -78,7 +80,6 @@ class Centipede{
         }
 
         const newHead = this.tail[index + 1];
-        const newDir = this.direction === 'a' ? 'd' : 'a';
         const newTail = [];
         let newTailLength = 0;
 
@@ -89,7 +90,7 @@ class Centipede{
             }
             newTailLength = newTail.length;
         }
-        const newCent = new Centipede(newHead[0],newHead[1],newTailLength,newDir);
+        const newCent = new Centipede(newHead[0],newHead[1],newTailLength,this.speed * -1);
         newCent.verticalSpeed = this.verticalSpeed;
 
         //If this does not have a tail
@@ -111,8 +112,8 @@ class Centipede{
     reset(){
         this.x = 0;
         this.y = 0;
-        this.tailLength = 5;
-        this.direction = 'd';
+        this.tailLength = settings.centipedeCurrentLength;
+        this.speed = gridSize;
         this.tail = [];
         this.verticalSpeed = gridSize;
     }

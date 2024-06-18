@@ -11,3 +11,17 @@ public class RyoshiHubApplication {
 	}
 
 }
+
+
+/*
+TODO: Add read Me
+TODO: Change Service name on Server
+Game I plan to program:
+	* Qix
+	* Pong
+
+Plans for future:
+	* Tron Online Multiplayer
+	* Pong Online Multiplayer
+	* Leaderboards
+ */

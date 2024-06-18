@@ -9,7 +9,6 @@ const hpLoseElement = document.getElementById('hp-lose');
 const loseElement = document.getElementById('lose');
 const gameTitle = document.getElementById('game-title');
 const highScoreElement = document.getElementById('high-score');
-const highScoreContainer = document.getElementById('high-score-container');
 const description = document.getElementById('game-description');
 
 if (localStorage.getItem('centipede-highScore') === null){
@@ -30,16 +29,19 @@ const settings = {
     centipedeStartX: 0,
     centipedeStartY: 0,
     centipedeStartTailLength: 5,
-    centipedeStartDirection: 'd',
     spiderProb: 0.005,
     wormProb: 0.005,
+    startWormProb: 0.005,
+    startSpiderProb: 0.005,
+    startTailLength: 5,
+    centipedeCurrentLength: 5,
 }
 
 const gridSize = 25;
 
 const player = new Player();
 
-const centipede = new Centipede(0,0, 5,'d');
+const centipede = new Centipede(0,0, 5,gridSize);
 
 let centipedes = [centipede];
 let worms = [];
@@ -54,7 +56,7 @@ let mushroom = {
 let mushrooms = [];
 let bullet = null;
 
-const centipedeFps = 12; //12
+const centipedeFps = 12;
 const centipedeFpsInterval = 1000 / centipedeFps;
 let centipedeLastTime = 0;
 
@@ -216,13 +218,14 @@ function resetBoard(){
     centipedes.push(centipede);
     worms = [];
     spiders = [];
-    centipede.tailLength = 5;
-    settings.spiderProb = 0.005;
-    settings.wormProb = 0.005;
+    settings.spiderProb = settings.startSpiderProb;
+    settings.wormProb = settings.startWormProb;
     bullet = null;
 }
 function resetGame(){
     resetBoard();
+    centipede.tailLength = settings.startTailLength;
+    settings.centipedeCurrentLength = settings.startTailLength;
     level.innerText = '1';
     hpElement.innerText = `${player.hp}`;
     resetBoard();
@@ -253,7 +256,7 @@ function nextLevel(){
     const newLevel = parseInt(level.innerText) + 1;
     level.innerText = `${newLevel}`;
     if (newLevel % 5 === 0){
-        centipede.tailLength++;
+        settings.centipedeCurrentLength++;
     }
     if (newLevel > parseInt(localStorage.getItem('centipede-highScore'))){
         localStorage.setItem('centipede-highScore',`${newLevel}`);
