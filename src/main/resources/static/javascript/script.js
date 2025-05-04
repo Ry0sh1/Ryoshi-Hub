@@ -16,4 +16,7 @@ document.getElementById('snake').addEventListener('click', e => {
 document.getElementById('centipede').addEventListener('click', e => {
     window.location = "/centipede";
 })
+document.getElementById('shooter').addEventListener('click', e => {
+    window.location = "https://game.dominik-fischer.net";
+})
 console.log('Test')
