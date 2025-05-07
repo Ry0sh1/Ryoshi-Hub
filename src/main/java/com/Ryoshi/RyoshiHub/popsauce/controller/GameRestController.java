@@ -24,7 +24,6 @@ import java.util.List;
 public class GameRestController {
 
     private final PictureService pictureService;
-    private final SettingService settingService;
     private final GameService gameService;
     private final PlayerService playerService;
 
@@ -62,8 +61,6 @@ public class GameRestController {
             }
         }while (gameService.containsCode(code.toString()));
         playerService.save(host);
-        //Save Settings
-        settingService.save(game.getSetting());
 
         //Set Up Game
         game.setCode(code.toString());

@@ -17,7 +17,6 @@ public class WebSocketMessageSender {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final PlayerService playerService;
-    private final SettingService settingService;
     private final GameService gameService;
 
     public void sendNewTimer(Game game, Message message){
@@ -62,7 +61,6 @@ public class WebSocketMessageSender {
             if (gameService.getAllPlayersByGame(game).isEmpty()){
                 gameService.deleteAllGamePicturesByGame(game);
                 gameService.delete(game);
-                settingService.deleteById(game.getSetting().getId());
             }
 
             playerService.deleteByUsername(player.getUsername());

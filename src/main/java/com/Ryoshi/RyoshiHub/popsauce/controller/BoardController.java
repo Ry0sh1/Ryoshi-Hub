@@ -1,6 +1,5 @@
 package com.Ryoshi.RyoshiHub.popsauce.controller;
 
-import com.Ryoshi.RyoshiHub.popsauce.entity.Game;
 import com.Ryoshi.RyoshiHub.popsauce.entity.Player;
 import com.Ryoshi.RyoshiHub.popsauce.entity.Setting;
 import com.Ryoshi.RyoshiHub.popsauce.service.GameService;
