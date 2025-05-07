@@ -1,9 +1,8 @@
 package com.Ryoshi.RyoshiHub.popsauce.controller;
 
 import com.Ryoshi.RyoshiHub.popsauce.entity.*;
-import com.Ryoshi.RyoshiHub.popsauce.entity.GamePicture;
-import com.Ryoshi.RyoshiHub.popsauce.entity.GamePlayer;
-import com.Ryoshi.RyoshiHub.popsauce.repository.*;
+import com.Ryoshi.RyoshiHub.popsauce.service.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -15,28 +14,12 @@ import java.util.List;
 
 @Controller
 @CrossOrigin
+@RequiredArgsConstructor
 public class MessageController {
 
-    private final PictureRepository pictureRepository;
-    private final SettingRepository settingRepository;
-    private final GameRepository gameRepository;
-    private final PlayerRepository playerRepository;
-    private final GamePictureRepository gamePictureRepository;
-    private final GamePlayerRepository gamePlayerRepository;
-
-    public MessageController(PictureRepository pictureRepository,
-                             SettingRepository settingRepository,
-                             GameRepository gameRepository,
-                             PlayerRepository playerRepository,
-                             GamePictureRepository gamePictureRepository,
-                             GamePlayerRepository gamePlayerRepository) {
-        this.pictureRepository = pictureRepository;
-        this.settingRepository = settingRepository;
-        this.gameRepository = gameRepository;
-        this.playerRepository = playerRepository;
-        this.gamePictureRepository = gamePictureRepository;
-        this.gamePlayerRepository = gamePlayerRepository;
-    }
+    private final PictureService pictureService;
+    private final GameService gameService;
+    private final PlayerService playerService;
 
     @MessageMapping("/game.wrongAnswer/{gameCode}")
     @SendTo("/start-game/game/{gameCode}")
@@ -57,12 +40,13 @@ public class MessageController {
             headerAccessor.getSessionAttributes().put("username",message.getSender());
             headerAccessor.getSessionAttributes().put("gameCode",message.getGameCode());
 
-            Game game = gameRepository.findByCode(message.getGameCode()).orElseThrow();
+            Game game = gameService.getByCode(message.getGameCode());
             Player newPlayer = new Player();
             newPlayer.setUsername(message.getSender());
-            if (playerRepository.findByUsername(message.getSender()) == null){
-                playerRepository.save(newPlayer);
-                gamePlayerRepository.save(new GamePlayer(game,newPlayer, 0));
+            newPlayer.setPoints(0);
+            if (playerService.findByUsername(message.getSender()) == null){
+                playerService.save(newPlayer);
+                gameService.addPlayerToGame(game, newPlayer);
             }
         }
         return message;
@@ -71,10 +55,9 @@ public class MessageController {
     @MessageMapping("/game.start/{gameCode}")
     @SendTo("/start-game/game/{gameCode}")
     public Message gameGotStarted(@Payload Message message){
-        Game game = gameRepository.findByCode(message.getGameCode()).orElseThrow();
+        Game game = gameService.getByCode(message.getGameCode());
         if (message.getSender().equals(game.getHost().getUsername())){
-            game.setStarted(true);
-            gameRepository.save(game);
+            gameService.startGameByCode(game.getCode());
             return message;
         }else {
             return null;
@@ -84,22 +67,17 @@ public class MessageController {
     @MessageMapping("/game.addPoints/{gameCode}")
     @SendTo("/start-game/game/{gameCode}")
     public Message addPoints(@Payload Message message){
-        Player player = playerRepository.findByUsername(message.getSender());
-        Game game = gameRepository.findByCode(message.getGameCode()).orElseThrow();
-        GamePlayer gamePlayer = gamePlayerRepository.findByPlayerAndGame(player,game);
-        gamePlayer.setPoints(gamePlayer.getPoints()+((Integer) message.getContent()));
-        if (gamePlayer.getPoints()>=100){
+        Player player = playerService.findByUsername(message.getSender());
+        Game game = gameService.getByCode(message.getGameCode());
+        player.setPoints(player.getPoints()+((Integer) message.getContent()));
+        if (player.getPoints()>=100){
             message.setMessageType(MessageType.END);
             message.setContent(message.getSender() + " won the Game");
-            game.setStarted(false);
-            List<GamePlayer> allGamePlayer = gamePlayerRepository.findAllByGame(game);
-            for (GamePlayer playerGame: allGamePlayer) {
-                playerGame.setPoints(0);
-                gamePlayerRepository.save(playerGame);
+            gameService.stopGameByCode(game.getCode());
+            List<Player> allGamePlayer = gameService.getAllPlayersByGame(game);
+            for (Player p: allGamePlayer) {
+                p.setPoints(0);
             }
-            gameRepository.save(game);
-        }else {
-            gamePlayerRepository.save(gamePlayer);
         }
         return message;
     }
@@ -108,27 +86,26 @@ public class MessageController {
     @SendTo("/start-game/game/{gameCode}")
     public Message playAgain(@Payload Message message){
 
-        Game game = gameRepository.findByCode(message.getGameCode()).orElseThrow();
-        gamePictureRepository.deleteAll(gamePictureRepository.findAllByGame(game));
+        Game game = gameService.getByCode(message.getGameCode());
+        gameService.deleteAllGamePicturesByGame(game);
 
-        List<Picture> pictures = pictureRepository.findAllByCategory(game.getSetting().getCategory());
+        List<Picture> pictures = pictureService.findAllByCategory(game.getSetting().getCategory());
         //Shuffle The list
-        for (int i = 0;i<pictures.size();i++){
+        for (int i = 0;i < pictures.size();i++){
             Picture first = pictures.get(i);
             int random = (int) (Math.floor(Math.random()*pictures.size()));
             pictures.set(i,pictures.get(random));
             pictures.set(random,first);
         }
         //Insert List
-        for (int i = 0;i < pictures.size();i++){
-            gamePictureRepository.save(new GamePicture(game,pictures.get(i),i));
+        for (Picture picture : pictures) {
+            gameService.addPictureToGame(game, picture);
         }
 
-        game.setCurrentPicture(gamePictureRepository.findByGameAndPlace(game,0).orElseThrow().getPicture());
+        game.setCurrentPicture(0);
         game.setCurrentTimer(game.getSetting().getGuessTimer()+game.getSetting().getResultTimer());
 
-        game.setStarted(true);
-        gameRepository.save(game);
+        gameService.startGameByCode(game.getCode());
 
         message.setMessageType(MessageType.PLAY_AGAIN);
         return message;

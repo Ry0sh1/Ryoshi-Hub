@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="/css/popsauce/root.css">
 </head>
 <body>
-<p class="invisible" id="set-result-timer" th:text="${game.get().getSetting().resultTimer}"></p>
-<p class="invisible" id="set-guess-timer" th:text="${game.get().getSetting().guessTimer}"></p>
-<p class="invisible" id="set-host-username" th:text="${game.get().host.getUsername()}"></p>
+<p class="invisible" id="set-result-timer" th:text="${game.getSetting().resultTimer}"></p>
+<p class="invisible" id="set-guess-timer" th:text="${game.getSetting().guessTimer}"></p>
+<p class="invisible" id="set-host-username" th:text="${game.host.getUsername()}"></p>
   <div class="left flex" id="all-player">
 
   </div>

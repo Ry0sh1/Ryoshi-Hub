@@ -1,71 +1,49 @@
 package com.Ryoshi.RyoshiHub.popsauce.controller;
 
+import com.Ryoshi.RyoshiHub.popsauce.service.*;
 import com.google.gson.Gson;
 import com.Ryoshi.RyoshiHub.popsauce.entity.*;
-import com.Ryoshi.RyoshiHub.popsauce.factory.ImageFactory;
-import com.Ryoshi.RyoshiHub.popsauce.repository.*;
-import com.Ryoshi.RyoshiHub.popsauce.repository.GamePlayerRepository;
-import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.ResourceLoader;
+import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
-import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
 @CrossOrigin
 @RequestMapping("/popsauce")
+@RequiredArgsConstructor
 public class GameRestController {
 
-    private final PictureRepository pictureRepository;
-    private final SettingRepository settingRepository;
-    private final GameRepository gameRepository;
-    private final PlayerRepository playerRepository;
-    private final GamePictureRepository gamePictureRepository;
-    private final GamePlayerRepository gamePlayerRepository;
-    private final ResourceLoader resourceLoader;
-    public GameRestController(PictureRepository pictureRepository,
-                              SettingRepository settingRepository,
-                              GameRepository gameRepository,
-                              PlayerRepository playerRepository,
-                              GamePictureRepository gamePictureRepository,
-                              GamePlayerRepository gamePlayerRepository, ApplicationContext applicationContext, ResourceLoader resourceLoader) {
-        this.pictureRepository = pictureRepository;
-        this.settingRepository = settingRepository;
-        this.gameRepository = gameRepository;
-        this.playerRepository = playerRepository;
-        this.gamePictureRepository = gamePictureRepository;
-        this.gamePlayerRepository = gamePlayerRepository;
-        this.resourceLoader = resourceLoader;
-    }
+    private final PictureService pictureService;
+    private final SettingService settingService;
+    private final GameService gameService;
+    private final PlayerService playerService;
 
     @GetMapping("/is-code-valid/{code}")
     public boolean isCodeValid(@PathVariable String code){
-        Game game = gameRepository.findByCode(code).orElse(null);
+        Game game = gameService.getByCode(code);
         return game != null;
     }
 
     @GetMapping("/is-username-valid/{username}")
     public boolean isUsernameValid(@PathVariable String username){
-        Player player = playerRepository.findByUsername(username);
+        Player player = playerService.findByUsername(username);
         return player == null;
     }
 
     @GetMapping("/get-current-picture/{code}")
     public String getCurrentPicture(@PathVariable String code){
-        Game game = gameRepository.findByCode(code).orElseThrow();
-        if (game.getCurrentPicture() == null){
-            game.setCurrentPicture(gamePictureRepository.findByGameAndPlace(game,0).orElseThrow().getPicture());
-        }
-        Picture currentPicture = game.getCurrentPicture();
+        Game game = gameService.getByCode(code);
+        Picture currentPicture = gameService.getCurrentPictureOfGame(game);
         Gson gson = new Gson();
         return gson.toJson(currentPicture);
     }
@@ -73,34 +51,27 @@ public class GameRestController {
     @PostMapping("/create")
     public String createGame(@RequestBody @NonNull Game game){
         Player host = game.getHost();
+        host.setPoints(0);
 
         //Make a Code
         String[] alphabet = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
         StringBuilder code = new StringBuilder();
-        long playerId;
         do{
             for (int i = 0;i<4;i++){
                 code.append(alphabet[(int) (Math.random()*(alphabet.length))]);
             }
-        }while (gameRepository.findByCode(code.toString()).isPresent());
-        if (playerRepository.findByUsername(host.getUsername()) != null){
-            playerId = playerRepository.findByUsername(host.getUsername()).getId();
-            host.setId(playerId);
-            playerRepository.save(host);
-        }else {
-            playerRepository.save(host);
-        }
-
+        }while (gameService.containsCode(code.toString()));
+        playerService.save(host);
         //Save Settings
-        settingRepository.save(game.getSetting());
+        settingService.save(game.getSetting());
 
         //Set Up Game
         game.setCode(code.toString());
         game.setCurrentTimer(0);
-        game.setCurrentPicture(null);
-        gameRepository.save(game);
+        game.setCurrentPicture(0);
+        gameService.save(game);
 
-        List<Picture> pictures = pictureRepository.findAllByCategory(game.getSetting().getCategory());
+        List<Picture> pictures = pictureService.findAllByCategory(game.getSetting().getCategory());
         //Shuffle The list
         for (int i = 0;i<pictures.size();i++){
             Picture first = pictures.get(i);
@@ -109,129 +80,49 @@ public class GameRestController {
             pictures.set(random,first);
         }
         //Insert List
-        for (int i = 0;i < pictures.size();i++){
-            gamePictureRepository.save(new GamePicture(game,pictures.get(i),i));
+        for (Picture picture : pictures) {
+            gameService.addPictureToGame(game, picture);
         }
 
-        game.setCurrentPicture(gamePictureRepository.findByGameAndPlace(game,0).orElseThrow().getPicture());
-        gameRepository.save(game);
-
         //Set Up the host
-        gamePlayerRepository.save(new GamePlayer(game,host, 0));
-        playerRepository.save(host);
+        gameService.addPlayerToGame(game, host);
+        playerService.save(host);
         return code.toString();
     }
 
     @GetMapping("/getAllPlayer/{code}")
     private String getAllPlayer(@PathVariable String code){
-        Game game = gameRepository.findByCode(code).orElseThrow();
-        List<GamePlayer> players = gamePlayerRepository.findAllByGame(game);
+        Game game = gameService.getByCode(code);
+        List<Player> players = gameService.getAllPlayersByGame(game);
         StringBuilder json = new StringBuilder();
         json.append("[");
-        for (GamePlayer gamePlayer :players) {
-            json.append("{\"username\":\"").append(gamePlayer.getPlayer().getUsername()).append("\",\"points\":").append(gamePlayer.getPoints()).append("},");
+        for (Player player : players) {
+            json.append("{\"username\":\"").append(player.getUsername()).append("\",\"points\":").append(player.getPoints()).append("},");
         }
         json.deleteCharAt(json.length()-1);
         json.append("]");
-        //System.out.println(json); For testing purposes
         return json.toString();
-    }
-
-    @GetMapping("/clear-database")
-    public void clearDatabase(){
-        gameRepository.deleteAll();
-        gamePictureRepository.deleteAll();
-        playerRepository.deleteAll();
-        settingRepository.deleteAll();
     }
 
     @GetMapping("/is-started/{code}")
     public String isStarted(@PathVariable String code){
-        Game game = gameRepository.findByCode(code).orElseThrow();
-        return String.valueOf(game.isStarted());
+        Game game = gameService.getByCode(code);
+        return String.valueOf(gameService.isStarted(game));
     }
 
     @GetMapping("/get-host/{code}")
     public String getHost(@PathVariable String code){
-        return gameRepository.findByCode(code).orElseThrow().getHost().getUsername();
+        return gameService.getByCode(code).getHost().getUsername();
     }
 
     @GetMapping("/get-current-timer/{code}")
     public String getCurrentGameTimer(@PathVariable String code){
-        Game game = gameRepository.findByCode(code).orElseThrow();
+        Game game = gameService.getByCode(code);
         return String.valueOf(game.getCurrentTimer());
-    }
-
-    @GetMapping("/insert-anime-data-into-database")
-    public void test(){
-        insertDirectoryDateIntoDatabase("/pictures/animes","anime");
-    }
-
-    @GetMapping("/insert-disney-data-into-database")
-    public void insertDisney(){
-        insertDirectoryDateIntoDatabase("src/main/resources/pictures/disney","disney");
-    }
-
-    public void insertDirectoryDateIntoDatabase(String pathname, String category){
-
-
-        try {
-            String directoryPath = "animes";
-            File directory = new File(directoryPath);
-            if (directory.exists() && directory.isDirectory()) {
-                List<File> directories = new ArrayList<>();
-                directories.addAll(Arrays.asList(directory.listFiles()));
-                System.out.println(directories.size());
-
-                for (File dir : directories){
-                    List<File> files = ImageFactory.getFilesInFolder(dir);
-                    for (File file : files){
-                        try {
-                            insertIntoDB(file, dir.getName(), category);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-
-            } else {
-                throw new IOException("Verzeichnis '" + directoryPath + "' nicht gefunden oder kein Verzeichnis.");
-            }
-        }catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
     }
 
     @GetMapping("/download-flag-data")
     public void downloadFlagData(){
-        String[] flagNames  = {"af","eg","ax","al","dz","as","vi","ad","ao","ai","aq","ag","gq","ar","am",
-                "aw","az","et","au","bs","bh","bd","bb","be","bz","bj","bm","bt","bo","ba","bw","bv","br",
-                "vg","io","bn","bg","bf","bi","cl","cn","ck","cr","cw","dk","de","dm","do","dj","ec","sv",
-                "ci","gb-eng","er","ee","fk","fo","fj","fi","fr","gf","pf","tf","ga","gm","ge","gh","gi",
-                "gd","gr","gl","gp","gu","gt","gg","gn","gw","gy","ht","hm","hn","hk","in","id","im","iq",
-                "ir","ie","is","il","it","jm","jp","ye","je","jo","ky","kh","cm","ca","cv","bq","kz","qa",
-                "ke","kg","ki","um","cc","co","km","cg","cd","xk","hr","cu","kw","la","ls","lv","lb","lr",
-                "ly","li","lt","lu","mo","mg","mw","my","mv","ml","mt","ma","mh","mq","mr","mu","yt","mx",
-                "fm","md","mc","mn","me","ms","mz","mm", "na","nr","nc", "nz","ni","nl","ne","ng","nu",
-                "gb-nir","kp","mp","mk","nf","no","om", "at","tl","pk","ps","pw","pa","pg","py","pe","ph",
-                "pn","pl","pt","pr","re","rw","ro","ru","bl","mf","sb","zm","ws","sm","st","sa","gb-sct",
-                "se","ch","sn","rs","sc","sl","zw","sg","sx","sk","si","so","es","sj","lk","sh","kn","lc",
-                "pm","vc","za","sd","gs","kr","ss","sr","sz","sy","tj","tw","tz","th","tg","tk","to","tt",
-                "td","cz","tn","tr","tm","tc","tv","ug","ua","hu","uy","uz","vu","va","ve","ae","us","gb",
-                "vn","gb-wls","wf","by","eh","cf","cy"};
-        try {
-            for (String flagName : flagNames) {
-                ImageFactory.createImageFile(ImageFactory.getImage("https://flagcdn.com/w2560/" + flagName + ".png"), new URI("src/main/resources/pictures/flags"), flagName);
-            }
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @GetMapping("/insert-flag-data-into-database")
-    public void flagPictures(){
         String[] flagNames  = {"af","eg","ax","al","dz","as","vi","ad","ao","ai","aq","ag","gq","ar","am",
                 "aw","az","et","au","bs","bh","bd","bb","be","bz","bj","bm","bt","bo","ba","bw","bv","br",
                 "vg","io","bn","bg","bf","bi","cl","cn","ck","cr","cw","dk","de","dm","do","dj","ec","sv",
@@ -266,70 +157,18 @@ public class GameRestController {
                 "Türkiye","Turkmenistan","Turks and Caicos Islands","Tuvalu","Uganda","Ukraine","Hungary","Uruguay","Uzbekistan","Vanuatu,Vatican City","Vatican","Venezuela","United Arab Emirates",
                 "United States,USA,United States of America","United Kingdom","Vietnam","Wales","Wallis and Futuna","Belarus","Sahrawi Arab Democratic Republic","Central African Republic",
                 "Cyprus"};
-        List<File> files = ImageFactory.getFilesInFolder(new File("src/main/resources/pictures/flags"));
-        List<String> fileNames = new ArrayList<>();
-        List<String> newRightGuesses = new ArrayList<>();
-        for (File file : files) {
-            fileNames.add(file.getName().substring(0,file.getName().length()-4));
-        }
-        for (String fileName : fileNames) {
-            for (int j = 0; j < flagNames.length; j++) {
-                if (fileName.equals(flagNames[j])) {
-                    newRightGuesses.add(rightGuesses[j]);
-                }
-            }
-        }
         try {
-            insertIntoDB(ImageFactory.getFilesInFolder(new File("src/main/resources/pictures/flags")),newRightGuesses,"Flags");
+            for (int i = 0; i < flagNames.length; i++) {
+                RenderedImage image = ImageIO.read(new URL("https://flagcdn.com/w2560/" + flagNames[i] + ".png"));
+                Path path = Paths.get("src/main/resources/pictures/flags/" + rightGuesses[i]);
+                if (!Files.exists(path)) {
+                    Files.createDirectories(path);
+                }
+                ImageIO.write(image,"jpg", new File(path + "/" + flagNames[i] + ".jpg"));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @GetMapping("/debug")
-    public void debugging(){}
-
-    private void insertIntoDB(List<File> files, List<String> right_guess,String Category,List<String> difficulty) throws IOException {
-        int counter = 0;
-        for (File file:files) {
-            byte[] imageData = ImageFactory.getImageAsBytes(file);
-            String base64Image = Base64.getEncoder().encodeToString(imageData);
-            Picture pic = new Picture(Category,base64Image,right_guess.get(counter), difficulty.get(counter));
-            pictureRepository.save(pic);
-            counter++;
-        }
-    }
-    private void insertIntoDB(List<File> files, List<String> right_guess,String Category, String difficulty) throws IOException {
-        int counter = 0;
-        for (File file:files) {
-            byte[] imageData = ImageFactory.getImageAsBytes(file);
-            String base64Image = Base64.getEncoder().encodeToString(imageData);
-            Picture pic = new Picture(Category,base64Image,right_guess.get(counter), difficulty);
-            pictureRepository.save(pic);
-            counter++;
-        }
-    }
-    private void insertIntoDB(List<File> files, List<String> right_guess,String Category) throws IOException {
-        int counter = 0;
-        for (File file:files) {
-            byte[] imageData = ImageFactory.getImageAsBytes(file);
-            String base64Image = Base64.getEncoder().encodeToString(imageData);
-            Picture pic = new Picture(Category,base64Image,right_guess.get(counter));
-            pictureRepository.save(pic);
-            counter++;
-        }
-    }
-    private void insertIntoDB(File file, String right_guess,String Category) throws IOException {
-        byte[] imageData = ImageFactory.getImageAsBytes(file);
-        String base64Image = Base64.getEncoder().encodeToString(imageData);
-        Picture pic = new Picture(Category,base64Image,right_guess);
-        pictureRepository.save(pic);
-    }
-    private void insertIntoDB(BufferedImage image, String category, String right_guess, String difficulty) throws IOException {
-        byte[] imageData = ImageFactory.getImageAsBytes(image);
-        String base64Image = Base64.getEncoder().encodeToString(imageData);
-        Picture pic = new Picture(category,base64Image,right_guess, difficulty);
-        pictureRepository.save(pic);
     }
 
 }
