@@ -40,8 +40,6 @@ public class WebSocketMessageSender {
         String username = (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("username");
         String gameCode = (String) headerAccessor.getSessionAttributes().get("gameCode");
 
-        System.out.println("Someone Disconnected");
-        System.out.println(username);
         if (username != null) {
             System.out.println(username + " left the game");
             var chatMessage = Message.builder()
@@ -52,7 +50,7 @@ public class WebSocketMessageSender {
 
             Game game = gameService.getByCode(gameCode);
             Player player = playerService.findByUsername(username);
-
+            game.getPlayers().remove(player);
             if (!gameService.getAllPlayersByGame(game).isEmpty() && game.getHost().getUsername().equals(player.getUsername())){
                 game.setHost(gameService.getAllPlayersByGame(game).get(0));
                 messagingTemplate.convertAndSend("/start-game/game/"+game.getCode(), chatMessage);
