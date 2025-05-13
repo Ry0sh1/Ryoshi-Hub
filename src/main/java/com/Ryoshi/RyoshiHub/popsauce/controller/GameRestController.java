@@ -70,11 +70,11 @@ public class GameRestController {
 
         List<Picture> pictures = pictureService.findAllByCategory(game.getSetting().getCategory());
         //Shuffle The list
-        for (int i = 0;i<pictures.size();i++){
+        for (int i = 0; i < pictures.size(); i++){
             Picture first = pictures.get(i);
-            int random = (int) (Math.floor(Math.random()*pictures.size()));
-            pictures.set(i,pictures.get(random));
-            pictures.set(random,first);
+            int random = (int) (Math.floor(Math.random() * pictures.size()));
+            pictures.set(i, pictures.get(random));
+            pictures.set(random, first);
         }
         //Insert List
         for (Picture picture : pictures) {
@@ -157,7 +157,7 @@ public class GameRestController {
         try {
             for (int i = 0; i < flagNames.length; i++) {
                 RenderedImage image = ImageIO.read(new URL("https://flagcdn.com/w2560/" + flagNames[i] + ".png"));
-                Path path = Paths.get("src/main/resources/pictures/flags/" + rightGuesses[i]);
+                Path path = Paths.get(PictureService.picturePath + "flags/" + rightGuesses[i]);
                 if (!Files.exists(path)) {
                     Files.createDirectories(path);
                 }

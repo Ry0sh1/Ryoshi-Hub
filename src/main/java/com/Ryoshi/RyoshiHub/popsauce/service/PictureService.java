@@ -12,10 +12,12 @@ import java.util.*;
 @Service
 public class PictureService {
 
+    public static final String picturePath = System.getenv("PICTURE_PATH");
+
     public List<Picture> findAllByCategory(String category) {
         List<Picture> pictures = new ArrayList<>();
 
-        File directory = new File("C:\\Users\\fisch\\IdeaProjects\\Ryoshi-Hub\\src\\main\\resources\\pictures\\" + category);
+        File directory = new File(picturePath + category);
         if (directory.exists() && directory.isDirectory()) {
             List<File> directories = new ArrayList<>(Arrays.asList(Objects.requireNonNull(directory.listFiles())));
 
@@ -35,7 +37,7 @@ public class PictureService {
 
     public List<String> getAllCategories() {
         List<String> categories = new ArrayList<>();
-        File directory = new File("C:\\Users\\fisch\\IdeaProjects\\Ryoshi-Hub\\src\\main\\resources\\pictures");
+        File directory = new File(picturePath);
         if (directory.exists() && directory.isDirectory()) {
             List<File> directories = new ArrayList<>(Arrays.asList(Objects.requireNonNull(directory.listFiles())));
 
