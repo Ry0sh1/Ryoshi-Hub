@@ -13,8 +13,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://ryoshi-hub.de", "http://www.ryoshi-hub.de")
-                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedOrigins("*")
+                .allowedMethods("*")
                 .allowedHeaders("*");
     }
 

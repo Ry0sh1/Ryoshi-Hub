@@ -50,6 +50,7 @@ public class GameService {
 
     public void delete(Game game) {
         gameMap.remove(game.getCode());
+        startedGames.remove(game);
     }
 
     public List<Player> getAllPlayersByGame(Game game) {

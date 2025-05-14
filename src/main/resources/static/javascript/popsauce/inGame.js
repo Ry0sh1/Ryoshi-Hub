@@ -5,7 +5,6 @@ const timerElement = document.getElementById('timer');
 let players = [];
 let username = localStorage.getItem('username');
 const code = window.location.href.slice(window.location.href.length-4,window.location.href.length);
-let host = false;
 let isShowingResult;
 let timer;
 let alreadyGuessedRight = false;
@@ -60,8 +59,6 @@ function start(){
     document.getElementById("play-again-button").classList.add("invisible");
     document.getElementById("play-again-button").disabled = true;
     document.getElementById("start-button").disabled = true;
-
-    refreshPicture();
 }
 function showResult(){
     document.getElementById('question').innerText = currentPicture.rightGuess.split(',')[0];
