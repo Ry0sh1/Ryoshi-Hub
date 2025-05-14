@@ -8,6 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/popsauce")
@@ -20,11 +27,23 @@ public class BoardController {
 
     @PostMapping("/upload-own-picture")
     public String uploadOwnPicture(
-            @RequestParam("url") String url,
+            @RequestParam("file") MultipartFile file,
             @RequestParam("category") String category,
-            @RequestParam("rightGuesses") String rightGuesses,
-            @RequestParam("difficulty") String difficulty){
-        //TODO
+            @RequestParam("rightGuesses") String rightGuesses) throws IOException {
+
+        if (file.isEmpty() || !"image/jpeg".equals(file.getContentType())) {
+            return "index";
+        }
+
+        Path dirPath = Paths.get(PictureService.picturePath, category, rightGuesses);
+        if (!Files.exists(dirPath)) {
+            Files.createDirectories(dirPath);
+        }
+
+        String fileName = UUID.randomUUID() + ".jpg";
+        Path filePath = dirPath.resolve(fileName);
+        file.transferTo(filePath.toFile());
+
         return "popsauce/home";
     }
 

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Controller
 @CrossOrigin
@@ -20,12 +21,6 @@ public class MessageController {
     private final PictureService pictureService;
     private final GameService gameService;
     private final PlayerService playerService;
-
-    @MessageMapping("/game.wrongAnswer/{gameCode}")
-    @SendTo("/start-game/game/{gameCode}")
-    public Message wrongAnswer(@Payload Message message){
-        return message;
-    }
 
     @MessageMapping("/game.chat/{gameCode}")
     @SendTo("/start-game/game/{gameCode}")
@@ -64,19 +59,26 @@ public class MessageController {
         }
     }
 
-    @MessageMapping("/game.addPoints/{gameCode}")
-    @SendTo("/start-game/game/{gameCode}")
-    public Message addPoints(@Payload Message message){
+    @MessageMapping("/game.guess/{gameCode}")
+    public Message guess(@Payload Message message) {
         Player player = playerService.findByUsername(message.getSender());
         Game game = gameService.getByCode(message.getGameCode());
-        player.setPoints(player.getPoints()+((Integer) message.getContent()));
-        if (player.getPoints()>=100){
-            message.setMessageType(MessageType.END);
-            message.setContent(message.getSender() + " won the Game");
-            gameService.stopGameByCode(game.getCode());
-            List<Player> allGamePlayer = gameService.getAllPlayersByGame(game);
-            for (Player p: allGamePlayer) {
-                p.setPoints(0);
+        AtomicBoolean rightGuess = new AtomicBoolean(false);
+        game.getPictures().get(game.getCurrentPicture()).getGuess().getGuesses().forEach(guess -> {
+            if (message.getContent().equals(rightGuess)) {
+                rightGuess.set(true);
+            }
+        });
+        if (rightGuess.get()) {
+            player.setPoints(player.getPoints() + 10);
+            if (player.getPoints() >= 100){
+                message.setMessageType(MessageType.END);
+                message.setContent(message.getSender() + " won the Game");
+                gameService.stopGameByCode(game.getCode());
+                List<Player> allGamePlayer = gameService.getAllPlayersByGame(game);
+                for (Player p: allGamePlayer) {
+                    p.setPoints(0);
+                }
             }
         }
         return message;

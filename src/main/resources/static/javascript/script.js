@@ -19,4 +19,6 @@ document.getElementById('centipede').addEventListener('click', e => {
 document.getElementById('shooter').addEventListener('click', e => {
     window.location = "https://game.dominik-fischer.net";
 })
-console.log('Test')
+document.getElementById('popsauce').addEventListener('click', e => {
+    window.location = "/popsauce";
+})

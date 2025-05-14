@@ -1,5 +1,7 @@
 package com.Ryoshi.RyoshiHub.popsauce.controller;
 
+import com.Ryoshi.RyoshiHub.popsauce.model.Guess;
+import com.Ryoshi.RyoshiHub.popsauce.repository.GuessRepository;
 import com.Ryoshi.RyoshiHub.popsauce.service.*;
 import com.google.gson.Gson;
 import com.Ryoshi.RyoshiHub.popsauce.entity.*;
@@ -16,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @CrossOrigin
@@ -26,6 +29,7 @@ public class GameRestController {
     private final PictureService pictureService;
     private final GameService gameService;
     private final PlayerService playerService;
+    private final GuessRepository guessRepository;
 
     @GetMapping("/is-code-valid/{code}")
     public boolean isCodeValid(@PathVariable String code){
@@ -157,11 +161,10 @@ public class GameRestController {
         try {
             for (int i = 0; i < flagNames.length; i++) {
                 RenderedImage image = ImageIO.read(new URL("https://flagcdn.com/w2560/" + flagNames[i] + ".png"));
-                Path path = Paths.get(PictureService.picturePath + "flags/" + rightGuesses[i]);
-                if (!Files.exists(path)) {
-                    Files.createDirectories(path);
-                }
-                ImageIO.write(image,"jpg", new File(path + "/" + flagNames[i] + ".jpg"));
+                Guess guess = new Guess(UUID.randomUUID().toString(), List.of(rightGuesses[i]));
+                guessRepository.save(guess);
+                Path path = Paths.get(PictureService.picturePath + "flags");
+                ImageIO.write(image,"jpg", new File(path + "/" + guess.getUuid() + ".jpg"));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

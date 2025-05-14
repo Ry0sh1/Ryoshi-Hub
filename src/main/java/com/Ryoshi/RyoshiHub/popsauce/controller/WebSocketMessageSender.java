@@ -30,7 +30,7 @@ public class WebSocketMessageSender {
         message.setGameCode(game.getCode());
         message.setSender(game.getCode());
         message.setMessageType(MessageType.PICTURE);
-        message.setContent(game.getPictures().get(game.getCurrentPicture()));
+        message.setContent(game.getPictures().get(game.getCurrentPicture()).getContent());
         messagingTemplate.convertAndSend("/start-game/game/"+game.getCode(),message);
     }
 

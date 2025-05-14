@@ -4,16 +4,13 @@ let currentPicture;
 const timerElement = document.getElementById('timer');
 let players = [];
 let username = localStorage.getItem('username');
-const code = window.location.href.slice(window.location.href.length-4,window.location.href.length);
+const code = window.location.href.slice(window.location.href.length - 4,window.location.href.length);
 let isShowingResult;
 let timer;
 let alreadyGuessedRight = false;
 
 //Playground
 const inputElement = document.getElementById('input');
-const inputLabelElement = document.getElementById('input-label');
-const goButton = document.getElementById('go');
-
 //Settings
 const guessTime = parseInt(document.getElementById('set-guess-timer').innerText);
 const resultTime = parseInt(document.getElementById('set-result-timer').innerText);
@@ -61,7 +58,7 @@ function start(){
     document.getElementById("start-button").disabled = true;
 }
 function showResult(){
-    document.getElementById('question').innerText = currentPicture.rightGuess.split(',')[0];
+    //document.getElementById('question').innerText = currentPicture.rightGuess.split(',')[0];
 }
 function hideResult(){
     document.getElementById('question').innerText = "Where is this picture from?";
